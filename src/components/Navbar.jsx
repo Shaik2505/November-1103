@@ -2,143 +2,141 @@ import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import ThemeBtn from "./ThemeBtn";
 import NavLinks from "../utils/NavLinks";
+import { CloseIcon, HamburgerIcon } from "./Icons";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState(null); // Track active dropdown
+  const [isAnimating, setIsAnimating] = useState(false);
+  const [isDarkTheme, setIsDarkTheme] = useState(false); // Managing theme state
   const navRef = useRef(null);
-  const dropdownRefs = useRef([]); // To store refs of each dropdown
 
-  const handleClickOutside = (event) => {
-    if (
-      navRef.current &&
-      !navRef.current.contains(event.target) && // Check if clicked outside the navbar
-      !dropdownRefs.current.some((ref) => ref && ref.contains(event.target)) // Also check if clicked outside any dropdown
-    ) {
+  const closeMenu = () => {
+    setIsAnimating(true);
+    setTimeout(() => {
       setIsOpen(false);
-      setActiveDropdown(null); // Close active dropdown when clicking outside
-    }
+      setIsAnimating(false);
+    }, 300); // Delay for animation
+  };
+
+  const toggleMenu = () => {
+    setIsOpen((prev) => !prev);
   };
 
   useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (navRef.current && !navRef.current.contains(event.target)) {
+        closeMenu();
+      }
+    };
+
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
     }
-
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isOpen]);
 
-  const handleDropdownToggle = (index) => {
-    setActiveDropdown((prevIndex) => (prevIndex === index ? null : index)); // Toggle active dropdown
+  const handleScrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  // Toggle dark theme
+  const toggleTheme = () => {
+    setIsDarkTheme((prev) => !prev);
+    document.documentElement.classList.toggle("dark");
+  };
+
+  const menuClasses = `fixed inset-y-0 right-0 w-52 bg-primary shadow-lg rounded-lg transform transition-transform duration-300 md:hidden z-50 ${
+    isAnimating ? "animate-slideOut" : "animate-slideIn"
+  } `;
 
   return (
     <nav
-      className="w-full sticky top-0 bg-primary shadow-md hover:primary/50 transition duration-300 dark:bg-darkPrimary "
       ref={navRef}
+      className={`w-full sticky top-0 z-50 bg-primary shadow-md transition duration-300 ${isDarkTheme ? "dark:bg-darkPrimary" : ""}`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex-shrink-0">
             <Link
               to="/body/home"
-              className="text-text hover:text-text/50 text-2xl font-bold dark:text-darkText dark:hover:text-darkOnHover"
+              className={`text-text hover:text-text/50 text-2xl font-bold ${isDarkTheme ? "dark:text-darkText dark:hover:text-darkOnHover" : ""}`}
+              onClick={handleScrollToTop}
             >
               MyApp
             </Link>
           </div>
+
           <div className="hidden md:flex items-center space-x-8">
-            <NavLinks
-              onLinkClick={() => setIsOpen(false)} // Close menu when link clicked
-              handleDropdownToggle={handleDropdownToggle}
-              activeDropdown={activeDropdown}
-              dropdownRefs={dropdownRefs}
-            />
-            <ThemeBtn />
+            <NavLinks onLinkClick={closeMenu} />
+            <ThemeBtn onClick={toggleTheme} />
           </div>
+
           <div className="flex md:hidden items-center space-x-4">
-            <ThemeBtn />
+            <ThemeBtn onClick={toggleTheme} />
             <button
-              onClick={() => setIsOpen(!isOpen)}
+              onClick={toggleMenu}
               className="text-white hover:bg-primary/50 inline-flex items-center justify-center p-2 rounded-md focus:outline-none"
             >
-              <svg
-                className={`${isOpen ? "hidden" : "block"} h-6 w-6`}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16m-7 6h7"
-                />
-              </svg>
-              <svg
-                className={`${isOpen ? "block" : "hidden"} h-6 w-6`}
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              {isOpen ? <CloseIcon /> : <HamburgerIcon />}
             </button>
           </div>
         </div>
       </div>
-      {isOpen && (
-        <div className="fixed inset-y-0 right-0 w-64 bg-primary shadow-lg transform translate-x-0 transition-transform duration-300 md:hidden z-50">
-          <div className="flex justify-end p-4">
-            <button
-              onClick={() => setIsOpen(false)}
-              className="text-white hover:bg-primary/50 p-2 rounded-md focus:outline-none"
-            >
-              <svg
-                className="h-6 w-6"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
+
+      {(isOpen || isAnimating) && (
+        <>
+          <div className={menuClasses}>
+            <div className="flex justify-end p-4">
+              <button
+                onClick={closeMenu}
+                className="text-white hover:bg-primary/50 p-2 rounded-md focus:outline-none"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
+                <CloseIcon />
+              </button>
+            </div>
+            <div className="p-4 space-y-4">
+              <NavLinks onLinkClick={closeMenu} />
+            </div>
           </div>
-          <div className="p-4 space-y-4">
-            <NavLinks
-              onLinkClick={() => setIsOpen(false)}
-              handleDropdownToggle={handleDropdownToggle}
-              activeDropdown={activeDropdown}
-              dropdownRefs={dropdownRefs}
-            />
-          </div>
-        </div>
-      )}
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
-          onClick={() => setIsOpen(false)}
-        ></div>
+
+          {/* Ensure the overlay is displayed only when the menu is open */}
+          {isOpen && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 z-40"
+              onClick={closeMenu}
+            ></div>
+          )}
+        </>
       )}
     </nav>
   );
 };
 
+
 export default Navbar;
+
+
+<style jsx>{`
+  @media (min-width: 768px) and (max-width: 1024px) {
+    .navbar {
+      height: 64px; /* Adjust according to your design */
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 1rem;
+    }
+    .navbar-logo {
+      flex-shrink: 0;
+    }
+    .navbar-menu {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+    .navbar-mobile-button {
+      display: none;
+    }
+  }
+`}</style>
